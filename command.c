@@ -5,14 +5,21 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <sys/wait.h>
-#include "command.h"
 #include "job.h"
+#include "command.h"
+
+#define READ_END 0
+#define WRITE_END 1
+
 
 void executeCmd(struct Job *job){
-    int in; int out; int status;
-    pid_t cpid = fork();
-    int y = 0;
-    if(cpid==0){
+    int in; int out; int status; int pipefd[2]; pid_t cpid; pid_t cpid1; int y = 0;
+    if(pipe(pipefd)<0){
+        perror("pipe failed");
+        exit(EXIT_FAILURE);
+    }
+    cpid = fork();
+    if(cpid == 0){  
         while(job->lch->redir[y]){
             if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
                 y++;
@@ -34,18 +41,56 @@ void executeCmd(struct Job *job){
                     perror(job->lch->redir[y]);
                 }
                 dup2(out,2);
-            }
+                }
             y++;
         }
-        execvp(job->lch->parsed[0],job->lch->parsed);
-        exit(0);
+        if(job->pipe == 1){
+            dup2(pipefd[WRITE_END],STDIN_FILENO);
+            execvp(job->lch->parsed[0],job->lch->parsed);
+            cpid1 = fork();
+            if(cpid1 == 0){
+                dup2(pipefd[READ_END], STDOUT_FILENO);
+                close(pipefd[READ_END]);
+                while(job->lch->redir[y]){
+                    if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
+                        y++;
+                        if((in = open(job->lch->redir[y],O_RDONLY,0777))<0){
+                            perror(job->lch->redir[y]);
+                        }
+                        dup2(in,0);
+                    }
+                    if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],">")==0){
+                        y++;
+                        if((out = creat(job->lch->redir[y],0777))<=0){
+                            perror(job->lch->redir[y]);
+                        }
+                        dup2(out, STDOUT_FILENO);
+                    }
+                    if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"2>")==0){
+                        y++;
+                        if((out = creat(job->lch->redir[y],0777))<0){
+                            perror(job->lch->redir[y]);
+                        }
+                        dup2(out,2);
+                    }
+                    y++;
+                }
+            }
+            else{
+                wait(&status);
+            }
+        }
+        else{
+            execvp(job->lch->parsed[0],job->lch->parsed);
+            exit(0);
+        }
     }
     else{
         wait(&status);
     }
 }
 
-struct Command *createChild(char *commandLine, struct Job *job){ //0 for read, 1 for write
+Command *createChild(char *commandLine){
     char *com_copy; char *com_free; char *token; char *saveptr; 
     char *com_copy1; char *com_free1; char *token1; char *saveptr1;
     struct Command *cmd = malloc(sizeof(struct Command));

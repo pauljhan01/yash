@@ -3,7 +3,7 @@
 
 struct Job{
      int pgid;
-     int pipe;
+     int pipe; //1 if pipe, 0 if not
      char* status;
      struct Command *lch;
      struct Command *rch;

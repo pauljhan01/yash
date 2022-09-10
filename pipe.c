@@ -1,6 +1,6 @@
 int main(int argc, char *argv[]){
     int pipefd[2], status, done=0;
-    pid_dt cpid;
+    pid_t cpid;
 
     pipe(pipefd);
 

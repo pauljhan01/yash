@@ -82,21 +82,20 @@ struct Job *createJob(char *commandLine){
     }
     if(commandLine[index]==pip){
         job->pipe = 1;
-        if(pipe(pipefd)<0){
-            exit(-1);
-        }
         token = strndup(commandLine,i);
         commandLine = commandLine + i + 2;
         token1 = strdup(commandLine);
-        job->lch = createChild(token,job);
-        
+        job->lch = createChild(token);
+        job->rch = createChild(token1);
+        executeCmd(job);
         free(token);
         free(token1);
     }
     else{
         job->pipe = 0;
         token = strdup(commandLine);
-        job->lch = createChild(token, NULL);
+        job->lch = createChild(token);
+        executeCmd(job);
         free(token);
     }
 
