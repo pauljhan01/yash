@@ -89,7 +89,6 @@ struct Job *createJob(char *commandLine){
         commandLine = commandLine + i + 2;
         token1 = strdup(commandLine);
         job->lch = createChild(token,job);
-        job->rch = createChild(token1,job);
         
         free(token);
         free(token1);
