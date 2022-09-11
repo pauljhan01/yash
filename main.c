@@ -9,10 +9,29 @@
 
 
 int main(){
-    char *commandLine = "ls | wc";
-    //commandLine = readline("# ");
-    struct Job *job = createJob(commandLine);
-    freeJob(job);
+    char *commandLine; char *scommandLine;
+
+    commandLine = readline("# ");
+    struct Job *firstJob = createFirstJob(commandLine);
+    struct Job *curJob = firstJob;
+    while(scommandLine = readline("# ")){
+        createJob(scommandLine, curJob);
+        curJob = findCurJob(firstJob);
+    }
+    freeJob(firstJob);
+
+    /*commandLine = readline("# ");
+    struct Job *firstJob = createFirstJob(commandLine);
+
+    struct Job *job;
+    
+    scommandLine = readline("# ");
+    createJob(commandLine, firstJob);
+    freeJob(firstJob);
+    free(scommandLine);*/
+    free(scommandLine);
+    free(commandLine);
+    
     return 0;
     /*
     free(commandLine);

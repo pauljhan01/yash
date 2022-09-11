@@ -11,14 +11,24 @@
 #define READ_END 0
 #define WRITE_END 1
 
+int cpid, cpid1, pid;
+
+static void sigint_handler(int signo){
+    printf("handler");
+    kill(-cpid,SIGINT);
+}
+
 void executePipeCmd(struct Job *job){
     int in; int out; int status; int pipefd[2]; pid_t cpid; pid_t cpid1; int y = 0;
     if(pipe(pipefd)<0){
         perror("pipe failed");
         exit(EXIT_FAILURE);
     }
+    
     cpid = fork();
     if(cpid == 0){
+        signal(SIGINT,sigint_handler);
+        
         while(job->lch->redir[y]){
             if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
                 y++;
@@ -48,6 +58,9 @@ void executePipeCmd(struct Job *job){
     }
     cpid1 = fork();
     if(cpid1 == 0){
+
+        
+
         close(pipefd[1]);
         dup2(pipefd[0],STDIN_FILENO);
         while(job->lch->redir[y]){
@@ -86,9 +99,14 @@ void executePipeCmd(struct Job *job){
 
 
 void executeCmd(struct Command *cmd){
+    
     int in; int out; int status; pid_t cpid; int y = 0;
+
+    signal(SIGINT,sigint_handler);
+
     cpid = fork();
     if(cpid == 0){  
+        
         while(cmd->redir[y]){
             if(cmd->redir[y]!=NULL && strcmp(cmd->redir[y],"<")==0){
                 y++;
