@@ -87,7 +87,7 @@ struct Job *createJob(char *commandLine){
         token1 = strdup(commandLine);
         job->lch = createChild(token);
         job->rch = createChild(token1);
-        executeCmd(job);
+        executePipeCmd(job);
         free(token);
         free(token1);
     }
@@ -95,7 +95,7 @@ struct Job *createJob(char *commandLine){
         job->pipe = 0;
         token = strdup(commandLine);
         job->lch = createChild(token);
-        executeCmd(job);
+        executeCmd(job->lch);
         free(token);
     }
 

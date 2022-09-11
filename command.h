@@ -13,6 +13,8 @@ typedef struct Command{
 
 Command *createChild(char *commandLine);
 
-void executeCmd(struct Job *job);
+void executeCmd(struct Command *cmd);
+
+void executePipeCmd(struct Job *job);
 
 #endif

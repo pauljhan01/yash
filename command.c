@@ -11,15 +11,14 @@
 #define READ_END 0
 #define WRITE_END 1
 
-
-void executeCmd(struct Job *job){
+void executePipeCmd(struct Job *job){
     int in; int out; int status; int pipefd[2]; pid_t cpid; pid_t cpid1; int y = 0;
     if(pipe(pipefd)<0){
         perror("pipe failed");
         exit(EXIT_FAILURE);
     }
     cpid = fork();
-    if(cpid == 0){  
+    if(cpid == 0){
         while(job->lch->redir[y]){
             if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
                 y++;
@@ -44,46 +43,77 @@ void executeCmd(struct Job *job){
                 }
             y++;
         }
-        if(job->pipe == 1){
-            dup2(pipefd[WRITE_END],STDIN_FILENO);
-            execvp(job->lch->parsed[0],job->lch->parsed);
-            cpid1 = fork();
-            if(cpid1 == 0){
-                dup2(pipefd[READ_END], STDOUT_FILENO);
-                close(pipefd[READ_END]);
-                while(job->lch->redir[y]){
-                    if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
-                        y++;
-                        if((in = open(job->lch->redir[y],O_RDONLY,0777))<0){
-                            perror(job->lch->redir[y]);
-                        }
-                        dup2(in,0);
-                    }
-                    if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],">")==0){
-                        y++;
-                        if((out = creat(job->lch->redir[y],0777))<=0){
-                            perror(job->lch->redir[y]);
-                        }
-                        dup2(out, STDOUT_FILENO);
-                    }
-                    if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"2>")==0){
-                        y++;
-                        if((out = creat(job->lch->redir[y],0777))<0){
-                            perror(job->lch->redir[y]);
-                        }
-                        dup2(out,2);
-                    }
-                    y++;
+        dup2(pipefd[WRITE_END],STDOUT_FILENO);
+        execvp(job->lch->parsed[0],job->lch->parsed);
+    }
+    cpid1 = fork();
+    if(cpid1 == 0){
+        close(pipefd[1]);
+        dup2(pipefd[0],STDIN_FILENO);
+        while(job->lch->redir[y]){
+            if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
+                y++;
+                if((in = open(job->lch->redir[y],O_RDONLY,0777))<0){
+                    perror(job->lch->redir[y]);
                 }
+                dup2(in,0);
             }
-            else{
-                wait(&status);
+            if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],">")==0){
+                y++;
+                if((out = creat(job->lch->redir[y],0777))<=0){
+                    perror(job->lch->redir[y]);
+                }
+                dup2(out, STDOUT_FILENO);
             }
+            if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"2>")==0){
+                y++;
+                if((out = creat(job->lch->redir[y],0777))<0){
+                    perror(job->lch->redir[y]);
+                }
+                dup2(out,2);
+                }
+            y++;
         }
-        else{
-            execvp(job->lch->parsed[0],job->lch->parsed);
-            exit(0);
+        execvp(job->rch->parsed[0],job->rch->parsed);
+    }
+    close(pipefd[READ_END]);
+    close(pipefd[WRITE_END]);
+
+    wait(&status);
+    wait(&status);
+
+}
+
+
+void executeCmd(struct Command *cmd){
+    int in; int out; int status; pid_t cpid; int y = 0;
+    cpid = fork();
+    if(cpid == 0){  
+        while(cmd->redir[y]){
+            if(cmd->redir[y]!=NULL && strcmp(cmd->redir[y],"<")==0){
+                y++;
+                if((in = open(cmd->redir[y],O_RDONLY,0777))<0){
+                    perror(cmd->redir[y]);
+                }
+                dup2(in,0);
+            }
+            if(cmd->redir[y]!=NULL && strcmp(cmd->redir[y],">")==0){
+                y++;
+                if((out = creat(cmd->redir[y],0777))<=0){
+                    perror(cmd->redir[y]);
+                }
+                dup2(out, STDOUT_FILENO);
+            }
+            if(cmd->redir[y]!=NULL && strcmp(cmd->redir[y],"2>")==0){
+                y++;
+                if((out = creat(cmd->redir[y],0777))<0){
+                    perror(cmd->redir[y]);
+                }
+                dup2(out,2);
+                }
+            y++;
         }
+        execvp(cmd->parsed[0],cmd->parsed);
     }
     else{
         wait(&status);
