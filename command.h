@@ -3,6 +3,8 @@
 
 #include "job.h"
 
+
+
 typedef struct Command{
     char **parsed;
     char **redir;

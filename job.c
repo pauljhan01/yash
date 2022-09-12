@@ -70,42 +70,6 @@ void freeJob(struct Job *job){
     free(cmd->redir);*/
 }
 
-int findBGToken(char *commandLine){
-    char *com_copy; char *com_free; char *token; char *saveptr;
-
-    com_copy = com_free = strdup(commandLine);
-
-    int bgToken = 0;
-
-    while(token = strtok_r(com_copy," ",&saveptr)){
-        com_copy = NULL;
-        if(strcmp(token,"bg")==0){
-            bgToken = 1;
-            break;
-        }
-    }
-    free(com_free);
-    return bgToken;
-}
-
-int findFGToken(char *commandLine){
-    char *com_copy; char *com_free; char *token; char *saveptr;
-
-    com_copy = com_free = strdup(commandLine);
-
-    int fgToken = 0;
-
-    while(token = strtok_r(com_copy," ",&saveptr)){
-        com_copy = NULL;
-        if(strcmp(token,"bg")==0){
-            fgToken = 1;
-            break;
-        }
-    }
-    free(com_free);
-    return fgToken;
-}
-
 struct Job *findCurJob(struct Job *firstJob){
     while(firstJob->next!=NULL){
         firstJob = firstJob->next;
@@ -113,8 +77,10 @@ struct Job *findCurJob(struct Job *firstJob){
     return firstJob;
 }
 
+
+
 struct Job *createFirstJob(char *commandLine){
-    char *token; char *token1;
+    char *token; char *token1; int background;
     struct Job *job = malloc(sizeof(struct Job));
 
     job->jobid = 1;
@@ -125,12 +91,16 @@ struct Job *createFirstJob(char *commandLine){
     int i = 0;
     int index = 0;
     char pip = '|';
-    int bgToken = findBGToken(commandLine);
-    int fgToken = findFGToken(commandLine);
+    
 
     while(commandLine[index] && commandLine[index] != pip){
         index++;
         i++;
+    }
+    while(commandLine[index]){
+        if(commandLine[index]=='&'){
+            background = 1;
+        }
     }
 
     if(commandLine[index]==pip){
@@ -162,6 +132,7 @@ void createJob(char *commandLine, struct Job *prevJob){
     //job_copy = job_free = strdup(commandLine);
 
     prevJob->next = job;
+    job->jobid = prevJob->jobid+1;
     job->next = NULL;
 
     int pipefd[2];
@@ -169,8 +140,7 @@ void createJob(char *commandLine, struct Job *prevJob){
     int i = 0;
     int index = 0;
     char pip = '|';
-    int bgToken = findBGToken(commandLine);
-    int fgToken = findFGToken(commandLine);
+
 
     while(commandLine[index] && commandLine[index] != pip){
         index++;
