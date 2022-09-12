@@ -7,21 +7,22 @@
 #include "command.h"
 #include "job.h"
 
-static void sig_handler(int signo){
-    switch(signo){
-        case SIGINT:
-            kill(-cpid,SIGINT);
-        case SIGTSTP:
-            kill(-cpid,SIGTSTP);
-    }
+static void sigint_handler(int signo){
+    kill(-cpid,SIGINT);
 }
+
+static void sigtstp_handler(int signo){
+    kill(-cpid,SIGTSTP);
+}
+
 
 int main(){
     char *commandLine; char *scommandLine;
+    signal(SIGINT,sigint_handler);
+    signal(SIGTSTP,sigtstp_handler);
     commandLine = readline("# ");
-    signal(SIGINT,sig_handler);
-    signal(SIGTSTP,sig_handler);
     struct Job *firstJob = createFirstJob(commandLine);
+    fJob = firstJob;
     struct Job *curJob = firstJob;
     while(scommandLine = readline("# ")){
         if(strncmp(scommandLine,"bg",2) == 0){
@@ -33,7 +34,7 @@ int main(){
         if(strncmp(scommandLine,"jobs",4) == 0){
             printJobs(firstJob);
         }
-        else{
+        else{ //segfaulting when only enter is inputted, lch and rch are null pointers
             createJob(scommandLine, curJob);
             curJob = findCurJob(firstJob);
         }

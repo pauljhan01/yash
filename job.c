@@ -182,10 +182,12 @@ struct Job *createFirstJob(char *commandLine){
         index++;
         i++;
     }
-    while(commandLine[index]){
-        if(commandLine[index]=='&'){
+    int back = 0;
+    while(commandLine[back]){
+        if(commandLine[back]=='&'){
             background = 1;
         }
+        back++;
     }
 
     if(commandLine[index]==pip){
@@ -203,7 +205,7 @@ struct Job *createFirstJob(char *commandLine){
         job->pipe = 0;
         token = strdup(commandLine);
         job->lch = createChild(token);
-        executeCmd(job->lch);
+        executeCmd(job);
         free(token);
     }
 
@@ -248,7 +250,7 @@ void createJob(char *commandLine, struct Job *prevJob){
         job->pipe = 0;
         token = strdup(commandLine);
         job->lch = createChild(token);
-        executeCmd(job->lch);
+        executeCmd(job);
         free(token);
     }
     //job->lch = createChild(strndup(commandLine,i));

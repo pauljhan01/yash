@@ -23,7 +23,10 @@ void executePipeCmd(struct Job *job){
     
     cpid = fork();
     if(cpid == 0){
-        cpid = getpid();
+        cpid = setpgid(0,0); //set parent group id here as well??
+        cpid = getpgid(cpid);
+        signal(SIGTSTP,SIG_DFL);
+        job->pgid = cpid;
         while(job->lch->redir[y]){
             if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
                 y++;
@@ -52,8 +55,7 @@ void executePipeCmd(struct Job *job){
         execvp(job->lch->parsed[0],job->lch->parsed);
     }
     cpid = fork();
-    if(cpid == 0){
-        cpid = getpid();
+    if(cpid == 0){ //set parent group id here for this process and set it to equal the process id of parent
         close(pipefd[1]);
         dup2(pipefd[0],STDIN_FILENO);
         while(job->lch->redir[y]){
@@ -85,8 +87,8 @@ void executePipeCmd(struct Job *job){
     close(pipefd[READ_END]);
     close(pipefd[WRITE_END]);
 
-    wait(&status);
-    wait(&status);
+    waitpid(-1,&status,WUNTRACED); //from my understanding, this waitpid is for when you just want to simply execute a process
+    waitpid(-1,&status,WUNTRACED);
 
 }
 
@@ -97,7 +99,10 @@ void executeCmd(struct Job *job){
 
     cpid = fork();
     if(cpid == 0){  
-        cpid = getpid();
+        cpid = setpgid(0,0);
+        cpid = getpgid(cpid);
+        signal(SIGTSTP,SIG_DFL);
+        job->pgid = cpid;
         while(job->lch->redir[y]){
             if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
                 y++;
@@ -123,9 +128,10 @@ void executeCmd(struct Job *job){
             y++;
         }
         execvp(job->lch->parsed[0],job->lch->parsed);
+        exit(EXIT_SUCCESS);
     }
     else{
-        wait(&status);
+        waitpid(-1,&status,WUNTRACED);
     }
 }
 

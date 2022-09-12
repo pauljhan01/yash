@@ -3,7 +3,7 @@
 
 
 int cpid, cpid1, pid;
-
+struct Job *fJob;
 struct Job{
      int pgid;
      int jobid;
