@@ -20,17 +20,18 @@ int main(){
     char *commandLine; char *scommandLine;
     commandLine = readline("# ");
     signal(SIGINT,sig_handler);
+    signal(SIGTSTP,sig_handler);
     struct Job *firstJob = createFirstJob(commandLine);
     struct Job *curJob = firstJob;
     while(scommandLine = readline("# ")){
         if(strncmp(scommandLine,"bg",2) == 0){
-            printf("bg\n");
+            handleBGJobs(scommandLine,firstJob);
         }
         if(strncmp(scommandLine,"fg",2) == 0){
-
+            handleFGJobs(scommandLine,firstJob);
         }
         if(strncmp(scommandLine,"jobs",4) == 0){
-
+            printJobs(firstJob);
         }
         else{
             createJob(scommandLine, curJob);
@@ -49,8 +50,6 @@ int main(){
     createJob(commandLine, firstJob);
     freeJob(firstJob);
     free(scommandLine);*/
-    free(scommandLine);
-    free(commandLine);
     
     return 0;
     /*

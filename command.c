@@ -51,8 +51,9 @@ void executePipeCmd(struct Job *job){
         dup2(pipefd[WRITE_END],STDOUT_FILENO);
         execvp(job->lch->parsed[0],job->lch->parsed);
     }
-    cpid1 = fork();
-    if(cpid1 == 0){
+    cpid = fork();
+    if(cpid == 0){
+        cpid = getpid();
         close(pipefd[1]);
         dup2(pipefd[0],STDIN_FILENO);
         while(job->lch->redir[y]){
@@ -90,38 +91,38 @@ void executePipeCmd(struct Job *job){
 }
 
 
-void executeCmd(struct Command *cmd){
+void executeCmd(struct Job *job){
     
     int in; int out; int status; int y = 0;
 
     cpid = fork();
     if(cpid == 0){  
         cpid = getpid();
-        while(cmd->redir[y]){
-            if(cmd->redir[y]!=NULL && strcmp(cmd->redir[y],"<")==0){
+        while(job->lch->redir[y]){
+            if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"<")==0){
                 y++;
-                if((in = open(cmd->redir[y],O_RDONLY,0777))<0){
-                    perror(cmd->redir[y]);
+                if((in = open(job->lch->redir[y],O_RDONLY,0777))<0){
+                    perror(job->lch->redir[y]);
                 }
                 dup2(in,0);
             }
-            if(cmd->redir[y]!=NULL && strcmp(cmd->redir[y],">")==0){
+            if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],">")==0){
                 y++;
-                if((out = creat(cmd->redir[y],0777))<=0){
-                    perror(cmd->redir[y]);
+                if((out = creat(job->lch->redir[y],0777))<=0){
+                    perror(job->lch->redir[y]);
                 }
                 dup2(out, STDOUT_FILENO);
             }
-            if(cmd->redir[y]!=NULL && strcmp(cmd->redir[y],"2>")==0){
+            if(job->lch->redir[y]!=NULL && strcmp(job->lch->redir[y],"2>")==0){
                 y++;
-                if((out = creat(cmd->redir[y],0777))<0){
-                    perror(cmd->redir[y]);
+                if((out = creat(job->lch->redir[y],0777))<0){
+                    perror(job->lch->redir[y]);
                 }
                 dup2(out,2);
                 }
             y++;
         }
-        execvp(cmd->parsed[0],cmd->parsed);
+        execvp(job->lch->parsed[0],job->lch->parsed);
     }
     else{
         wait(&status);
