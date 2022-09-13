@@ -71,6 +71,19 @@ void freeJob(struct Job *job){
     free(cmd->redir);*/
 }
 
+void changeStatus(void){
+    while(fJob!=NULL){
+        if(fJob->pgid==cpid){
+            fJob->status = 1;
+        }
+        if(fJob->pgid==pid){
+            fJob->status = 2;
+            printf("[%d]");
+        }
+        fJob = fJob->next;
+    }
+}
+
 struct Job *findCurJob(struct Job *firstJob){
     while(firstJob->next!=NULL){
         firstJob = firstJob->next;
@@ -79,12 +92,21 @@ struct Job *findCurJob(struct Job *firstJob){
 }
 
 void printJobs(struct Job *firstJob){
-    if(firstJob->status == 0){
-        printf("[%d] - Running\t %s",firstJob->jobid,firstJob->commandLine);
+    struct Job *tmp = firstJob;
+    while(firstJob!=NULL){
+        if(firstJob->status == 0){
+            printf("[%d] - Running\t %s\n",firstJob->jobid,firstJob->commandLine);
+        }
+        firstJob = firstJob->next;
     }
-    if(firstJob->status == 1){
-        printf("[%d] + Stopped\t %s",firstJob->jobid,firstJob->commandLine);
+    firstJob = tmp;
+    while(firstJob!=NULL){
+        if(firstJob->status == 1){
+            printf("[%d] + Stopped\t %s\n",firstJob->jobid,firstJob->commandLine);
+        }
+        firstJob = firstJob->next;
     }
+    
 }
 
 void handleBGJobs(char *commandLine, struct Job *firstJob){
@@ -170,8 +192,11 @@ struct Job *createFirstJob(char *commandLine){
     job->jobid = 1;
     job->prev = NULL;
     job->next = NULL;
-
+    job->status = 0;
     int pipefd[2];
+    job->pipe = 0;
+    job->commandLine = commandLine;
+    job->background = 0;
 
     int i = 0;
     int index = 0;
@@ -185,10 +210,11 @@ struct Job *createFirstJob(char *commandLine){
     int back = 0;
     while(commandLine[back]){
         if(commandLine[back]=='&'){
-            background = 1;
+            job->background = 1;
         }
         back++;
     }
+
 
     if(commandLine[index]==pip){
         job->pipe = 1;
@@ -213,16 +239,20 @@ struct Job *createFirstJob(char *commandLine){
 
 }
 
-void createJob(char *commandLine, struct Job *prevJob){
-    char *job_copy; char *job_free; char *token; char *saveptr; char *token1;
+void createJob(char *commandLine, struct Job *firstJob){
+    char *job_copy; char *job_free; char *token; char *saveptr; char *token1; int background;
     struct Job *job = malloc(sizeof(struct Job));
     //job_copy = job_free = strdup(commandLine);
 
-    prevJob->next = job;
-    job->prev = prevJob;
-    job->jobid = prevJob->jobid+1;
-    job->next = NULL;
 
+    job->commandLine = commandLine;
+    firstJob->next = job;
+    job->prev = firstJob;
+    job->jobid = firstJob->jobid+1;
+    job->next = NULL;
+    job->background = 0;
+    job->pipe = 0;
+    job->status = 1;
     int pipefd[2];
 
     int i = 0;
@@ -234,6 +264,16 @@ void createJob(char *commandLine, struct Job *prevJob){
         index++;
         i++;
     }
+
+    int back = 0;
+    while(commandLine[back]){
+        if(commandLine[back]=='&'){
+            job->background = 1;
+        }
+        back++;
+    }
+
+
 
     if(commandLine[index]==pip){
         job->pipe = 1;

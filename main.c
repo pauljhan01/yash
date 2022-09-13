@@ -13,17 +13,26 @@ static void sigint_handler(int signo){
 
 static void sigtstp_handler(int signo){
     kill(-cpid,SIGTSTP);
+    changeStatus();
+}
+
+static void sigchld_handler(int signo){
+    int status;
+    while(pid = waitpid(-1,&status,WNOHANG)>0){
+        changeStatus();
+    };
 }
 
 
 int main(){
     char *commandLine; char *scommandLine;
+    struct Job *curJob;
     signal(SIGINT,sigint_handler);
     signal(SIGTSTP,sigtstp_handler);
+    signal(SIGCHLD,sigchld_handler);
     commandLine = readline("# ");
     struct Job *firstJob = createFirstJob(commandLine);
-    fJob = firstJob;
-    struct Job *curJob = firstJob;
+    fJob = firstJob; curJob = firstJob;
     while(scommandLine = readline("# ")){
         if(strncmp(scommandLine,"bg",2) == 0){
             handleBGJobs(scommandLine,firstJob);
@@ -38,7 +47,6 @@ int main(){
             createJob(scommandLine, curJob);
             curJob = findCurJob(firstJob);
         }
-        
     }
     freeJob(firstJob);
 

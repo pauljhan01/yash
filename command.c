@@ -11,8 +11,6 @@
 #define READ_END 0
 #define WRITE_END 1
 
-static void sig_handler(int signo){}
-
 void executePipeCmd(struct Job *job){
     int in; int out; int status; int pipefd[2]; pid_t cpid; pid_t cpid1; int y = 0;
 
@@ -86,10 +84,12 @@ void executePipeCmd(struct Job *job){
     }
     close(pipefd[READ_END]);
     close(pipefd[WRITE_END]);
-
-    waitpid(-1,&status,WUNTRACED); //from my understanding, this waitpid is for when you just want to simply execute a process
-    waitpid(-1,&status,WUNTRACED);
-
+    job->status = 0;
+    if(job->background!=1){
+        
+        pid = waitpid(-1,&status,WUNTRACED); //from my understanding, this waitpid is for when you just want to simply execute a process
+        waitpid(-1,&status,WUNTRACED);
+    }
 }
 
 
@@ -130,8 +130,9 @@ void executeCmd(struct Job *job){
         execvp(job->lch->parsed[0],job->lch->parsed);
         exit(EXIT_SUCCESS);
     }
-    else{
-        waitpid(-1,&status,WUNTRACED);
+    else if(job->background!=1){
+        job->status = 0;
+        pid = waitpid(-1,&status,WUNTRACED);
     }
 }
 
@@ -152,7 +153,7 @@ Command *createChild(char *commandLine){
     int x = 0;
     int y = 0;
     while(token = strtok_r(com_copy," ",&saveptr)){
-        if((strcmp(token,"<")!=0) && (strcmp(token,">")!=0) && (strcmp(token,"2>")!=0) && (strcmp(token,"|")!=0)){
+        if((strcmp(token,"<")!=0) && (strcmp(token,">")!=0) && (strcmp(token,"2>")!=0) && (strcmp(token,"|")!=0) && (strcmp(token,"&")!=0)){
             x++;
         }
         else if((strcmp(token,"<")==0) || (strcmp(token,">")==0) || (strcmp(token,"2>")==0) || (strcmp(token,"|")==0)){
@@ -176,12 +177,12 @@ Command *createChild(char *commandLine){
     com_copy = com_free;
 
     while(token1 = strtok_r(com_copy1," ",&saveptr1)){
-        if(strcmp(token1,">")!=0 && strcmp(token1,"<")!=0 && strcmp(token1,"2>")!=0){
+        if(strcmp(token1,">")!=0 && strcmp(token1,"<")!=0 && strcmp(token1,"2>")!=0 && strcmp(token1,"&")!=0){
             cmd->parsed[x] = strdup(token1);
             x++;
             com_copy1 = NULL;
         }
-        else{
+        else if(strcmp(token1,"&")!=0){
             cmd->redir[y] = strdup(token1);
             y++;
             token1 = strtok_r(com_copy1," ",&saveptr1);
